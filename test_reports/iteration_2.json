@@ -1,0 +1,31 @@
+{
+  "iteration": 2,
+  "summary": "Verified RCA for the reported 'preview load failure / unknown resource' issue: the current preview origin (ai-finance-whatif.preview.emergentagent.com) loads cleanly with /@vite/client and /src/main.tsx resolving with zero failed requests, production (ai-finance-whatif.emergent.host) returns HTTP 200 serving a compiled /assets/index-*.js bundle, and neither HTML references the stale recycled vscode-bd64964f-556e-4fed-aab3-7c232e6d1faf host. No app code change was required (per deployer RCA); all 3 criteria pass.",
+  "passed": 2,
+  "failed": 0,
+  "retest_needed": false,
+  "bugs": [],
+  "action_items": [],
+  "checks": [
+    {
+      "criterion": "The current Wealth public preview loads without the reported Vite resource failure",
+      "name": "preview-loads-without-vite-resource-failure",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "goto https://ai-finance-whatif.preview.emergentagent.com -> HTTP 200, page.on('requestfailed') captured zero failures (no /@vite/client or /src/main.tsx load failures), body rendered non-empty content, HTML does not contain 'vscode-bd64964f-556e-4fed-aab3-7c232e6d1faf'. Cross-checked via curl: response includes literal /@vite/client and /src/main.tsx script tags (dev mode, as expected for preview) and 0 occurrences of the stale UUID string."
+    },
+    {
+      "criterion": "The deployed production app is unaffected; The reported stale UUID host is not referenced by current app HTML",
+      "name": "production-serves-compiled-bundle",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "goto https://ai-finance-whatif.emergent.host -> HTTP 200, HTML matches /\\/assets\\/index-[A-Za-z0-9]+\\.js/ (compiled bundle, confirmed by curl as /assets/index-B3rOCOcl.js), contains no /@vite/client, no /src/main.tsx, and no 'vscode-bd64964f-556e-4fed-aab3-7c232e6d1faf'. curl of both preview and production HTML independently confirmed grep -c for the stale UUID = 0 in both files."
+    }
+  ],
+  "notes": [
+    "3 acceptance_matrix criteria covered by 2 browser checks: criterion 3 (stale UUID absence) is asserted inside both checks against both preview and production HTML, satisfying it without a duplicate artifact.",
+    "This briefing is an infra/RCA verification task, not an app-feature task; no backend API surface was implicated by the acceptance matrix, so no backend test file was added.",
+    "Per deployer RCA at /app/deployer-agent-docs/RCA_537aee6e-8ff9-4dc4-82de-4f8ab45e5d9a.MD, the originally reported failure was caused by a browser holding cached HTML pinned to a recycled vscode-<uuid> dev-pod host; that condition is client-side cache state, not reproducible or fixable via app code, and was correctly left unaddressed by the main agent.",
+    "A separate iteration_1.json exists in this directory from a prior, unrelated feature briefing (Receipt Scanner) — left untouched."
+  ]
+}
