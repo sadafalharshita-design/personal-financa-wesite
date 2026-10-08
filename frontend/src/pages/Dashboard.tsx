@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ArrowDownRight, ArrowRight, ArrowUpRight, CircleDollarSign, Sparkles, Target, TrendingUp, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, CircleDollarSign, MessageCircle, Sparkles, Target, TrendingUp, Wallet } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { apiGet } from "@/lib/api";
@@ -17,7 +17,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { data, isLoading, isError } = useQuery({ queryKey: ["dashboard"], queryFn: fetchDashboard, retry: false });
   return <div className="space-y-6">
-    <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="section-kicker" data-testid="dashboard-kicker">Financial control room</p><h2 className="mt-3 font-heading text-3xl font-bold tracking-tight sm:text-4xl" data-testid="dashboard-heading">Your money, translated into decisions.</h2><p className="mt-2 text-sm text-slate-400" data-testid="dashboard-description">Live analytics across accounts, cash flow, goals and monthly limits.</p></div><Button variant="outline" onClick={() => navigate("/what-if")} className="border-[#00f5a0]/25 bg-[#00f5a0]/5 text-[#00f5a0]" data-testid="dashboard-open-simulator-button"><Sparkles size={16} /> Ask a What-If</Button></section>
+    <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="section-kicker" data-testid="dashboard-kicker">Financial control room</p><h2 className="mt-3 font-heading text-3xl font-bold tracking-tight sm:text-4xl" data-testid="dashboard-heading">Your money, translated into decisions.</h2><p className="mt-2 text-sm text-slate-400" data-testid="dashboard-description">Live analytics across accounts, cash flow, goals and monthly limits.</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => navigate("/ask")} className="border-cyan-400/20 bg-cyan-400/[.04] text-cyan-200" data-testid="dashboard-ask-wealth-button"><MessageCircle size={16}/> Ask Wealth</Button><Button variant="outline" onClick={() => navigate("/what-if")} className="border-[#00f5a0]/25 bg-[#00f5a0]/5 text-[#00f5a0]" data-testid="dashboard-open-simulator-button"><Sparkles size={16} /> Ask a What-If</Button></div></section>
     {isLoading && <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" data-testid="dashboard-loading-state">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-36 animate-pulse rounded-2xl bg-white/[.04]" />)}</div>}
     {isError && <div className="error-panel" data-testid="dashboard-error-state">Your financial data is temporarily unavailable. The rest of Wealth is still ready.</div>}
     {data && <>

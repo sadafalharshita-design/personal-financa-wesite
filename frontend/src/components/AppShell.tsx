@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowLeftRight, BadgeIndianRupee, ChartNoAxesCombined, ChevronRight,
-  CircleGauge, Landmark, LogOut, Menu, ScanLine, Sparkles, Target, WalletCards, X,
+  CircleGauge, Landmark, LogOut, Menu, MessageCircle, ScanLine, Sparkles, Target, WalletCards, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { endSession } from "@/lib/session";
@@ -16,6 +16,7 @@ const NAV = [
   { to: "/budget", label: "Budget", icon: WalletCards, testId: "nav-budgets-link" },
   { to: "/goals", label: "Goals", icon: Target, testId: "nav-goals-link" },
   { to: "/scan", label: "Receipt Scanner", icon: ScanLine, testId: "nav-receipt-scanner-link" },
+  { to: "/ask", label: "Ask Wealth", icon: MessageCircle, testId: "nav-ask-wealth-link" },
   { to: "/what-if", label: "What-If Simulator", icon: Sparkles, testId: "nav-what-if-link" },
 ];
 

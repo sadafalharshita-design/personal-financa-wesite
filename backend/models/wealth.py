@@ -212,3 +212,14 @@ class ReceiptScanResponse(BaseModel):
     extraction: ReceiptExtraction
     warnings: list[str]
     ai_powered: bool
+
+
+class CoachQuestion(BaseModel):
+    message: str = Field(min_length=3, max_length=500)
+
+
+class CoachExchange(BaseModel):
+    id: str
+    question: str
+    answer: str
+    created_at: datetime

@@ -18,6 +18,7 @@ Wealth is an INR-first personal-finance decision-support application. It persist
 6. Goals → create, contribute, track remaining amount/progress/projected completion, delete.
 7. What-If → ask in natural language → Gemini intent interpretation → deterministic baseline/projections/goal impact → grounded explanation → saved history.
 8. Receipt scanner → upload JPG/PNG/WEBP → Gemini multimodal extraction → Pydantic validation → editable review → explicit confirmation through the standard transaction endpoint.
+9. Ask Wealth → user asks a finance question → server builds privacy-minimized aggregate context → Gemini streams grounded guidance and next-step suggestions → private exchange history is persisted.
 
 ## Persistence model
 - `users`: id, email, password_hash, name, image_url, onboarded, timestamps.
@@ -27,6 +28,7 @@ Wealth is an INR-first personal-finance decision-support application. It persist
 - `goals`: id, user_id, name, target_paise, current_paise, target_date, priority, category, timestamps.
 - `scenarios`: saved request, baseline, deterministic result, goal impact, AI explanation, assumptions, timestamps.
 - `ai_usage`: per-user timestamps for the 10 simulations/hour limit.
+- `coach_messages`: user-owned question/answer exchanges and timestamps for private conversation history.
 
 Money is stored as integer paise. API responses expose rupee numbers for typed frontend formatting.
 
@@ -45,8 +47,10 @@ Money is stored as integer paise. API responses expose rupee numbers for typed f
 - Seed data supports dashboard charts, budget state, category analytics, and goal-aware simulation immediately.
 
 ## Current release boundary
-Implemented: landing, local auth, onboarding, accounts, transactions, budget, goals, dashboard analytics, Gemini-backed What-If simulation, saved scenario history, Gemini receipt/bill scanning with confirmation, responsive UI, ownership checks, validation, and separate AI request limits.
+Implemented: landing, local auth, onboarding, accounts, transactions, budget, goals, dashboard analytics, Gemini-backed What-If simulation, saved scenario history, Gemini receipt/bill scanning with confirmation, streaming Gemini finance coach with persisted private history, responsive UI, ownership checks, validation, and separate AI request limits.
 
 Receipt images are limited to 8 MB, verified by file signature, processed in memory, and discarded after extraction. AI never writes a transaction directly.
+
+Ask Wealth receives only aggregates (balances, average cash flow, top categories, budget, and goal progress), never raw transactions or merchant details. It is read-only and limited to 20 requests per user per hour.
 
 Deferred from the broader roadmap: scheduled recurring processing, automated email reports, and third-party social authentication.

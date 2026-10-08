@@ -55,3 +55,42 @@ export async function apiUpload<T>(path: string, file: File): Promise<T> {
   }
   return (await res.json()) as T;
 }
+
+export type StreamEvent<T> =
+  | { type: "token"; content: string }
+  | { type: "done"; data: T }
+  | { type: "error"; message: string };
+
+export async function apiPostStream<T>(path: string, body: JsonBody, onEvent: (event: StreamEvent<T>) => void): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => null);
+    throw new ApiError(res.status, errBody);
+  }
+  if (!res.body) throw new ApiError(502, { detail: "Streaming response unavailable" });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let completed: T | undefined;
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const frames = buffer.split("\n\n");
+    buffer = frames.pop() ?? "";
+    for (const frame of frames) {
+      const dataLine = frame.split("\n").find((line) => line.startsWith("data: "));
+      if (!dataLine) continue;
+      const event = JSON.parse(dataLine.slice(6)) as StreamEvent<T>;
+      onEvent(event);
+      if (event.type === "done") completed = event.data;
+      if (event.type === "error") throw new ApiError(502, { detail: event.message });
+    }
+    if (done) break;
+  }
+  if (!completed) throw new ApiError(502, { detail: "The response ended before completion" });
+  return completed;
+}

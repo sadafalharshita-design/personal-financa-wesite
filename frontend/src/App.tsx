@@ -15,6 +15,7 @@ import Budget from "@/pages/Budget";
 import Goals from "@/pages/Goals";
 import WhatIf from "@/pages/WhatIf";
 import ReceiptScanner from "@/pages/ReceiptScanner";
+import AskWealth from "@/pages/AskWealth";
 
 function ProtectedPage({ children, bare = false }: { children: ReactNode; bare?: boolean }) {
   const location = useLocation();
@@ -42,6 +43,7 @@ export default function App() {
       <Route path="/goals" element={<ProtectedPage><Goals /></ProtectedPage>} />
       <Route path="/what-if" element={<ProtectedPage><WhatIf /></ProtectedPage>} />
       <Route path="/scan" element={<ProtectedPage><ReceiptScanner /></ProtectedPage>} />
+      <Route path="/ask" element={<ProtectedPage><AskWealth /></ProtectedPage>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     <Toaster richColors />

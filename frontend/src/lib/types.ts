@@ -116,3 +116,10 @@ export interface ReceiptScanResponse {
   warnings: string[];
   ai_powered: boolean;
 }
+
+export interface CoachExchange {
+  id: string;
+  question: string;
+  answer: string;
+  created_at: string;
+}
