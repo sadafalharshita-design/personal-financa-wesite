@@ -17,6 +17,7 @@ Wealth is an INR-first personal-finance decision-support application. It persist
 5. Budget → set monthly limit and alert threshold; usage derives from current-month completed expenses.
 6. Goals → create, contribute, track remaining amount/progress/projected completion, delete.
 7. What-If → ask in natural language → Gemini intent interpretation → deterministic baseline/projections/goal impact → grounded explanation → saved history.
+8. Receipt scanner → upload JPG/PNG/WEBP → Gemini multimodal extraction → Pydantic validation → editable review → explicit confirmation through the standard transaction endpoint.
 
 ## Persistence model
 - `users`: id, email, password_hash, name, image_url, onboarded, timestamps.
@@ -44,6 +45,8 @@ Money is stored as integer paise. API responses expose rupee numbers for typed f
 - Seed data supports dashboard charts, budget state, category analytics, and goal-aware simulation immediately.
 
 ## Current release boundary
-Implemented: landing, local auth, onboarding, accounts, transactions, budget, goals, dashboard analytics, Gemini-backed What-If simulation, saved scenario history, responsive UI, ownership checks, validation, and AI request limiting.
+Implemented: landing, local auth, onboarding, accounts, transactions, budget, goals, dashboard analytics, Gemini-backed What-If simulation, saved scenario history, Gemini receipt/bill scanning with confirmation, responsive UI, ownership checks, validation, and separate AI request limits.
 
-Deferred from the broader roadmap: receipt image scanning, scheduled recurring processing, automated email reports, and third-party social authentication.
+Receipt images are limited to 8 MB, verified by file signature, processed in memory, and discarded after extraction. AI never writes a transaction directly.
+
+Deferred from the broader roadmap: scheduled recurring processing, automated email reports, and third-party social authentication.

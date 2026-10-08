@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date as Date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -63,7 +63,7 @@ class TransactionCreate(BaseModel):
     type: TransactionType
     amount: float = Field(gt=0, le=100_000_000)
     description: str = Field(min_length=2, max_length=140)
-    date: date
+    date: Date
     category: str = Field(min_length=2, max_length=40)
     merchant: str | None = Field(default=None, max_length=80)
     account_id: str
@@ -109,7 +109,7 @@ class GoalCreate(BaseModel):
     name: str = Field(min_length=2, max_length=80)
     target_amount: float = Field(gt=0, le=1_000_000_000)
     current_amount: float = Field(default=0, ge=0, le=1_000_000_000)
-    target_date: date | None = None
+    target_date: Date | None = None
     priority: int = Field(default=2, ge=1, le=3)
     category: str = Field(default="Savings", min_length=2, max_length=40)
 
@@ -197,3 +197,18 @@ class ScenarioResult(BaseModel):
     ai_powered: bool
     assumptions: list[str]
     created_at: datetime
+
+
+class ReceiptExtraction(BaseModel):
+    merchant: str | None = Field(default=None, max_length=80)
+    amount: float = Field(gt=0, le=100_000_000)
+    date: Date | None = None
+    category: str = Field(min_length=2, max_length=40)
+    description: str = Field(min_length=2, max_length=140)
+    type: TransactionType = "EXPENSE"
+
+
+class ReceiptScanResponse(BaseModel):
+    extraction: ReceiptExtraction
+    warnings: list[str]
+    ai_powered: bool

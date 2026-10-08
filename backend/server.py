@@ -16,6 +16,7 @@ from lib.db import client, ensure_indexes
 from routers.auth import router as auth_router
 from routers.finance import router as finance_router
 from routers.whatif import router as whatif_router
+from routers.receipts import router as receipts_router
 
 
 # Startup runs before the yield, shutdown after it. Add your own setup/teardown here.
@@ -41,6 +42,7 @@ async def root():
 api_router.include_router(auth_router)
 api_router.include_router(finance_router)
 api_router.include_router(whatif_router)
+api_router.include_router(receipts_router)
 
 app.add_middleware(
     CORSMiddleware,

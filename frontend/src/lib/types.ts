@@ -101,3 +101,18 @@ export interface ScenarioResult {
   assumptions: string[];
   created_at: string;
 }
+
+export interface ReceiptExtraction {
+  merchant: string | null;
+  amount: number;
+  date: string | null;
+  category: string;
+  description: string;
+  type: "INCOME" | "EXPENSE";
+}
+
+export interface ReceiptScanResponse {
+  extraction: ReceiptExtraction;
+  warnings: string[];
+  ai_powered: boolean;
+}

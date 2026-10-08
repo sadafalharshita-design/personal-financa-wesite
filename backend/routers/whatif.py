@@ -30,14 +30,14 @@ async def get_scenario(scenario_id: str, user: dict = Depends(current_user)):
 @router.post("/simulate", response_model=ScenarioResult)
 async def simulate(payload: ScenarioRequest, user: dict = Depends(current_user)):
     since = utc_now() - timedelta(hours=1)
-    request_count = await db.ai_usage.count_documents({"user_id": user["id"], "created_at": {"$gte": since}})
+    request_count = await db.ai_usage.count_documents({"user_id": user["id"], "kind": {"$in": ["scenario", None]}, "created_at": {"$gte": since}})
     if request_count >= 10:
         raise HTTPException(status_code=429, detail="You've reached the hourly simulation limit. Try again shortly.")
 
     data = await baseline_for_user(user["id"])
     if not data["transactions"]:
         raise HTTPException(status_code=422, detail="We need at least one month of financial activity to make a meaningful simulation.")
-    await db.ai_usage.insert_one({"user_id": user["id"], "created_at": utc_now()})
+    await db.ai_usage.insert_one({"user_id": user["id"], "kind": "scenario", "created_at": utc_now()})
     intent, interpretation_ai = await interpret_with_gemini(payload.query)
     avg_income = data["avg_income"]
     avg_expenses = data["avg_expenses"]

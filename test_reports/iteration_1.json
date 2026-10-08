@@ -1,0 +1,57 @@
+{
+  "iteration": 1,
+  "summary": "Receipt Scanner (Gemini-backed) feature verified end-to-end: navigation/privacy disclosure, real-image extraction via Gemini, user-correctable review, explicit confirm-to-save flow, and unsafe-upload rejection. All 7 acceptance criteria covered by 3 backend tests + 3 browser checks (one UI criterion pair + two pure-browser UX criteria combined where one browser check satisfies multiple related criteria).",
+  "passed": 6,
+  "failed": 0,
+  "retest_needed": false,
+  "bugs": [],
+  "action_items": [],
+  "checks": [
+    {
+      "criterion": "A valid real JPEG receipt is analyzed by Gemini",
+      "name": "test_tscheck_receipt_scanner.py::test_valid_jpeg_receipt_is_extracted_without_creating_transaction",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/receipts/scan with real JPEG (Reliance Fresh receipt) -> 200, ai_powered=true, extraction.amount=1265.5, category='Groceries', description populated, type='EXPENSE'. Transaction count before/after GET /api/transactions unchanged, proving no auto-save."
+    },
+    {
+      "criterion": "Unsafe uploads are rejected (API layer: non-image content, auth)",
+      "name": "test_tscheck_receipt_scanner.py::test_non_image_upload_is_rejected, test_scan_requires_authentication",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/receipts/scan with text/plain body -> 415 {'detail':'Use a JPG, PNG, or WEBP receipt image'}. Same request without session cookie -> 401."
+    },
+    {
+      "criterion": "Authenticated users can open the Receipt Scanner from primary navigation; scanner discloses privacy/non-storage",
+      "name": "receipt-scanner-nav-and-privacy",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Demo login (rahul@wealth.demo) -> /dashboard; clicked nav-receipt-scanner-link -> /scan; receipt-scanner-heading, receipt-privacy-status ('Images aren't stored'), receipt-upload-panel, receipt-dropzone, and verification disclaimer all visible. No console errors. Re-ran successfully against public preview URL https://ai-finance-whatif.preview.emergentagent.com."
+    },
+    {
+      "criterion": "Valid receipt analyzed by Gemini in UI; AI extraction never auto-saves; fields are user-correctable; explicit confirmation saves through normal transaction flow",
+      "name": "receipt-scan-review-confirm-saves-transaction",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Uploaded real JPEG via receipt-file-input -> clicked receipt-scan-button -> receipt-review-section appeared with Gemini extraction (merchant 'Reliance Fresh', amount 1265.5, category 'Groceries', matching seed facts) while still on /scan (no auto-save). Edited merchant/description inputs to new values and confirmed they updated (correctability). Clicked receipt-confirm-save-button -> navigated to /transactions, new row 'tscheck receipt scan test purchase' visible. No console errors."
+    },
+    {
+      "criterion": "Unsafe uploads are rejected (client-side UX)",
+      "name": "receipt-scanner-rejects-unsafe-upload",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Selected a .txt file via receipt-file-input; toast 'Choose a JPG, PNG, or WEBP image' appeared and receipt-file-name never rendered (upload blocked before reaching API). No console errors."
+    },
+    {
+      "criterion": "Scanner works as a polished desktop flow (readable layout, no console errors, discloses non-storage and verify-AI-output)",
+      "name": "receipt-scanner-nav-and-privacy / receipt-scan-review-confirm-saves-transaction (desktop 1280x800/900 viewport)",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Both checks ran at desktop viewport (1280x800 and 1280x900); screenshots show clean upload and review layouts; disclaimer 'AI extraction can make mistakes... verify the amount, date, merchant, category, and account before confirmation' visible; zero console_errors across all 3 browser check runs."
+    }
+  ],
+  "notes": [
+    "7 acceptance_matrix criteria covered by 3 backend test functions (1 file) + 3 browser checks; several browser checks jointly evidence multiple related criteria (noted in their criterion/evidence text) rather than being duplicated as separate artifacts, per the 'ONE browser check per UI-facing criterion' rule where criteria overlap in the same flow.",
+    "Gemini extraction quality verified against seed facts: merchant 'Reliance Fresh' and grand total 1265.50 both matched exactly."
+  ]
+}

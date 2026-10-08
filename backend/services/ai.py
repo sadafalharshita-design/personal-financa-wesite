@@ -1,11 +1,12 @@
+import base64
 import json
 import os
 import re
 import uuid
 
-from emergentintegrations.llm.chat import LlmChat, StreamDone, TextDelta, UserMessage
+from emergentintegrations.llm.chat import ImageContent, LlmChat, StreamDone, TextDelta, UserMessage
 
-from models.wealth import ScenarioInterpretation
+from models.wealth import ReceiptExtraction, ScenarioInterpretation
 
 
 def deterministic_interpret(query: str) -> ScenarioInterpretation:
@@ -97,3 +98,56 @@ async def explain_with_gemini(calculated: dict) -> tuple[str, bool]:
         return explanation or fallback, bool(explanation)
     except Exception:
         return fallback, False
+
+
+async def extract_receipt_with_gemini(image_bytes: bytes, mime_type: str) -> tuple[ReceiptExtraction, list[str]]:
+    key = os.environ.get("EMERGENT_LLM_KEY")
+    if not key:
+        raise RuntimeError("Receipt AI is not configured")
+    chat = LlmChat(
+        api_key=key,
+        session_id=f"wealth-receipt-{uuid.uuid4()}",
+        system_message=(
+            "You extract transaction fields from Indian receipts and bills. Return strict JSON only, no markdown. "
+            "Never invent unreadable fields. Use null for an unreadable merchant/date. Amount must be the final total paid. "
+            "Valid categories: Food, Groceries, Dining, Shopping, Transport, Fuel, Rent, Utilities, Bills, Healthcare, "
+            "Education, Entertainment, Travel, UPI, Subscription, Other. Type must be EXPENSE unless the document is clearly an income receipt."
+        ),
+    ).with_model("gemini", "gemini-3.1-pro-preview")
+    prompt = (
+        "Extract this receipt or bill. Return exactly one JSON object with keys merchant (string or null), "
+        "amount (positive number in INR), date (YYYY-MM-DD or null), category (one allowed category), "
+        "description (short factual description), type (EXPENSE or INCOME), and warnings (array of short strings). "
+        "If currency is not INR, mention it in warnings but keep the printed numeric amount."
+    )
+    message = UserMessage(
+        text=prompt,
+        file_contents=[ImageContent(image_base64=base64.b64encode(image_bytes).decode("ascii"))],
+    )
+    chunks: list[str] = []
+    async for event in chat.stream_message(message):
+        if isinstance(event, TextDelta):
+            chunks.append(event.content)
+        elif isinstance(event, StreamDone):
+            break
+    raw = "".join(chunks).strip()
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
+    if not match:
+        raise ValueError("Gemini did not return structured receipt data")
+    parsed = json.loads(match.group())
+    warnings = parsed.pop("warnings", [])
+    allowed_categories = {
+        "Food", "Groceries", "Dining", "Shopping", "Transport", "Fuel", "Rent", "Utilities", "Bills",
+        "Healthcare", "Education", "Entertainment", "Travel", "UPI", "Subscription", "Other",
+    }
+    category_aliases = {"Grocery": "Groceries", "Restaurant": "Dining", "Medical": "Healthcare", "Bill": "Bills"}
+    parsed["category"] = category_aliases.get(parsed.get("category"), parsed.get("category"))
+    if parsed.get("category") not in allowed_categories:
+        parsed["category"] = "Other"
+        warnings.append("Category was unclear and has been set to Other.")
+    extraction = ReceiptExtraction.model_validate(parsed)
+    if extraction.date is None:
+        warnings.append("Date could not be read. Please enter it before saving.")
+    if extraction.merchant is None:
+        warnings.append("Merchant could not be read. Please review before saving.")
+    return extraction, [str(item) for item in warnings[:5]]
