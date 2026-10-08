@@ -1,0 +1,25 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, CheckCircle2, Gauge, IndianRupee, Pencil } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { apiGet, apiPut } from "@/lib/api";
+import { formatINR, friendlyError } from "@/lib/format";
+import type { Budget as BudgetType } from "@/lib/types";
+
+export default function Budget() {
+  const qc = useQueryClient(); const [editing, setEditing] = useState(false); const [limit, setLimit] = useState(""); const [threshold, setThreshold] = useState("80");
+  const query = useQuery({ queryKey: ["budget"], queryFn: () => apiGet<BudgetType>("/budget"), retry: false });
+  const update = useMutation({ mutationFn: () => apiPut<BudgetType>("/budget", { monthly_limit: Number(limit), alert_threshold: Number(threshold) }), onSuccess: () => { qc.invalidateQueries({queryKey:["budget"]}); qc.invalidateQueries({queryKey:["dashboard"]}); setEditing(false); toast.success("Monthly budget updated"); }, onError: (error)=>toast.error(friendlyError(error)) });
+  function edit() { if(query.data){setLimit(String(query.data.monthly_limit));setThreshold(String(query.data.alert_threshold));} setEditing(true); }
+  const budget = query.data;
+  return <div className="space-y-6"><div className="page-title-row"><div><p className="section-kicker">Monthly guardrail</p><h2 className="page-title" data-testid="budget-heading">Budget</h2><p className="page-description">A live operating limit—not a static number you forget.</p></div><Button onClick={edit} className="bg-[#00f5a0] text-[#07110c]" data-testid="budget-edit-button"><Pencil size={15}/> Adjust budget</Button></div>
+    {editing&&<form className="panel grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end" onSubmit={(e)=>{e.preventDefault();update.mutate();}} data-testid="budget-form"><div className="space-y-2"><Label>Monthly limit (₹)</Label><Input type="number" min="1" value={limit} onChange={(e)=>setLimit(e.target.value)} required data-testid="budget-limit-input"/></div><div className="space-y-2"><Label>Alert threshold (%)</Label><Input type="number" min="1" max="100" value={threshold} onChange={(e)=>setThreshold(e.target.value)} required data-testid="budget-threshold-input"/></div><Button type="submit" disabled={update.isPending} data-testid="budget-save-button">Save changes</Button></form>}
+    {query.isLoading&&<div className="h-80 animate-pulse rounded-2xl bg-white/[.04]" data-testid="budget-loading-state"/>}
+    {budget&&<section className="grid gap-6 lg:grid-cols-[1.25fr_.75fr]"><article className="panel relative overflow-hidden" data-testid="budget-overview-card"><div className="absolute right-0 top-0 h-52 w-52 rounded-full bg-[#00f5a0]/8 blur-3xl"/><div className="relative"><div className="flex items-center justify-between"><span className="metric-icon metric-icon-mint"><Gauge size={20}/></span><span className="status-dot">{budget.month}</span></div><p className="mt-10 text-sm text-slate-400">You have spent</p><p className="money-value mt-2 text-4xl sm:text-5xl" data-testid="budget-spent-value">{formatINR(budget.spent)}</p><p className="mt-2 text-sm text-slate-500">of {formatINR(budget.monthly_limit)} this month</p><div className="mt-9"><div className="mb-3 flex items-center justify-between text-xs"><span className="text-slate-500">Usage</span><span className={budget.usage_percentage>100?"text-rose-300":"text-[#00f5a0]"}>{budget.usage_percentage}%</span></div><div className="progress-track h-3" data-testid="budget-progress-bar-food"><div className={`h-full rounded-full ${budget.usage_percentage>100?"bg-rose-400":"bg-[#00f5a0]"}`} style={{width:`${Math.min(budget.usage_percentage,100)}%`}}/></div></div></div></article>
+      <div className="space-y-4"><article className="metric-card" data-testid="budget-remaining-card"><div className="metric-icon metric-icon-cyan"><IndianRupee size={18}/></div><p className="metric-label">Remaining</p><p className={`money-value mt-3 text-3xl ${budget.remaining<0?"text-rose-300":""}`}>{formatINR(budget.remaining)}</p></article><article className={`rounded-2xl border p-5 ${budget.usage_percentage>=budget.alert_threshold?"border-amber-400/25 bg-amber-400/[.05]":"border-[#00f5a0]/20 bg-[#00f5a0]/[.04]"}`} data-testid="budget-status-card">{budget.usage_percentage>=budget.alert_threshold?<AlertTriangle className="text-amber-300"/>:<CheckCircle2 className="text-[#00f5a0]"/>}<p className="mt-4 font-heading text-lg font-semibold">{budget.usage_percentage>=budget.alert_threshold?"Time to slow the pace":"Spending is on track"}</p><p className="mt-2 text-sm leading-6 text-slate-400">{budget.usage_percentage>=budget.alert_threshold?`You crossed your ${budget.alert_threshold}% alert threshold.`:`You’re below your ${budget.alert_threshold}% alert threshold.`}</p></article></div></section>}
+    <p className="disclaimer" data-testid="budget-disclaimer">Budget usage uses completed expenses recorded in the current calendar month.</p>
+  </div>;
+}

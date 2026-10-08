@@ -1,0 +1,27 @@
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, Landmark, Target, WalletCards } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { apiPost } from "@/lib/api";
+import { friendlyError } from "@/lib/format";
+import { beginSession } from "@/lib/session";
+import type { User } from "@/lib/types";
+
+export default function Onboarding() {
+  const navigate = useNavigate();
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({ name: "", account_name: "Primary Savings", account_type: "SAVINGS", initial_balance: "50000", monthly_budget: "25000", goal_name: "", goal_target: "" });
+  const mutation = useMutation({ mutationFn: () => apiPost<User>("/auth/onboarding", { ...form, initial_balance: Number(form.initial_balance), monthly_budget: Number(form.monthly_budget), goal_target: form.goal_target ? Number(form.goal_target) : null, goal_name: form.goal_name || null }), onSuccess: async () => { await beginSession(); toast.success("Your financial baseline is ready"); navigate("/dashboard"); }, onError: (error) => toast.error(friendlyError(error)) });
+  const update = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
+  return <div className="min-h-screen bg-[#070a10] p-5 text-slate-50 sm:p-10"><div className="mx-auto max-w-3xl"><div className="mb-12"><p className="section-kicker" data-testid="onboarding-kicker">Setup · Step {step} of 3</p><h1 className="mt-4 font-heading text-4xl font-bold" data-testid="onboarding-heading">Let’s understand your starting point.</h1><div className="mt-6 h-1 overflow-hidden rounded-full bg-white/8"><div className="h-full bg-[#00f5a0] transition-[width] duration-300" style={{ width: `${step / 3 * 100}%` }} data-testid="onboarding-progress" /></div></div>
+    <div className="panel min-h-[390px]" data-testid="onboarding-step-panel">
+      {step === 1 && <div className="space-y-6"><Landmark className="text-[#00f5a0]" /><div><h2 className="font-heading text-2xl font-semibold" data-testid="onboarding-profile-title">First, your profile</h2><p className="mt-2 text-sm text-slate-400">We use this only to personalise your workspace.</p></div><div className="space-y-2"><Label htmlFor="ob-name">Your name</Label><Input id="ob-name" value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="Aarav Mehta" data-testid="onboarding-name-input" /></div></div>}
+      {step === 2 && <div className="space-y-6"><WalletCards className="text-[#00f5a0]" /><div><h2 className="font-heading text-2xl font-semibold" data-testid="onboarding-account-title">Create your primary account</h2><p className="mt-2 text-sm text-slate-400">This becomes the foundation for your cash-flow baseline.</p></div><div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Account name</Label><Input value={form.account_name} onChange={(e) => update("account_name", e.target.value)} data-testid="onboarding-account-name-input" /></div><div className="space-y-2"><Label>Account type</Label><select className="form-select" value={form.account_type} onChange={(e) => update("account_type", e.target.value)} data-testid="onboarding-account-type-select"><option value="SAVINGS">Savings</option><option value="CURRENT">Current</option></select></div><div className="space-y-2"><Label>Initial balance (₹)</Label><Input type="number" value={form.initial_balance} onChange={(e) => update("initial_balance", e.target.value)} data-testid="onboarding-balance-input" /></div><div className="space-y-2"><Label>Monthly budget (₹)</Label><Input type="number" value={form.monthly_budget} onChange={(e) => update("monthly_budget", e.target.value)} data-testid="onboarding-budget-input" /></div></div></div>}
+      {step === 3 && <div className="space-y-6"><Target className="text-[#00f5a0]" /><div><h2 className="font-heading text-2xl font-semibold" data-testid="onboarding-goal-title">Add a goal (optional)</h2><p className="mt-2 text-sm text-slate-400">A goal unlocks impact estimates inside What-If simulations.</p></div><div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>What are you saving for?</Label><Input value={form.goal_name} onChange={(e) => update("goal_name", e.target.value)} placeholder="Laptop" data-testid="onboarding-goal-name-input" /></div><div className="space-y-2"><Label>Target amount (₹)</Label><Input type="number" value={form.goal_target} onChange={(e) => update("goal_target", e.target.value)} placeholder="80000" data-testid="onboarding-goal-target-input" /></div></div></div>}
+    </div><div className="mt-6 flex justify-between"><Button variant="ghost" onClick={() => setStep((value) => Math.max(value - 1, 1))} disabled={step === 1} data-testid="onboarding-back-button">Back</Button>{step < 3 ? <Button onClick={() => setStep((value) => value + 1)} disabled={step === 1 && form.name.trim().length < 2} className="bg-[#00f5a0] text-[#07110c]" data-testid="onboarding-next-button">Continue <ArrowRight size={16} /></Button> : <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="bg-[#00f5a0] text-[#07110c]" data-testid="onboarding-complete-button">{mutation.isPending ? "Building workspace…" : "Enter Wealth"}<ArrowRight size={16} /></Button>}</div>
+  </div></div>;
+}
